@@ -8,6 +8,6 @@ Crypto Exchange
 
 
 - Thanks to three algorithms, you can adjust the price dynamically:
--  Calculation based on trading ratio
+-  Calculation based on trading ratio.
 -  The price requested by the users is adjusted by looking at the orders given by the users.
 -  Binance is used as a reference and the received price data is integrated into the system.
