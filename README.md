@@ -1,7 +1,7 @@
 # Exchange
 Crypto Exchange
 
-Version: 0.02
+Version: Beta 0.02
 
 Please contact me for bug & Error or incompletes: No[Name]#0894
 
