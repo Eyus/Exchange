@@ -1,2 +1,13 @@
 # Exchange
 Crypto Exchange
+
+- This script allows you to trade more than ten (exchangeable) cryptocurrencies.
+
+
+- Unique wallet addresses and just like real cryptocurrency exchanges, you can place limit orders and see the orders placed.
+
+
+- Thanks to three algorithms, you can adjust the price dynamically.
+  1- Calculation based on trading ratio
+  2- The price requested by the users is adjusted by looking at the orders given by the users.
+  3- Binance is used as a reference and the received price data is integrated into the system.
