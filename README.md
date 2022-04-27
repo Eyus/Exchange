@@ -12,7 +12,11 @@ Please contact me for bug & Error or incompletes: No[Name]#0894
 - Unique wallet addresses and just like real cryptocurrency exchanges, you can place limit orders and see the orders placed.
 
 
-- Thanks to three algorithms, you can adjust the price dynamically:
--  Calculation based on trading ratio.
--  The price requested by the users is adjusted by looking at the orders given by the users.
+- Thanks to two algorithms, you can adjust the price dynamically:
+-  The point where the price thoughts of buyers and sellers meet is reference.
 -  Binance is used as a reference and the received price data is integrated into the system.
+
+Warning:
+- You need start this system create a mining system for mint. Or some admins starting ico drops. Because this system works like real exchanges. If there is no supply, no trading. 
+
+
