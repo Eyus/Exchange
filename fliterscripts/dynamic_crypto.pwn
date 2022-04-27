@@ -67,7 +67,7 @@ stock HowMuchPercent(value, value2)
 	return ((value2 * 100) / value);
 }
 
-
+new price_method;
 // COLOR DEFINES //
 #define COLOR_SERVER      	(0xAFAFAFFF)
 #define COLOR_RED        	(0xB70000FF)
@@ -199,55 +199,24 @@ stock confirm_transfer_block(const target_adress[], source_adress_id, coin_id, F
 
 // PRICE SET AND PRICE CHANGE FUNCTIONS //
 
-stock set_crypto_price_demand(crypto)
-{
-	if(crypt_data[crypto][selled_coin] == 0 || crypt_data[crypto][buyed_coin] == 0) return 1;
-	if(crypt_data[crypto][stack_buy_coin] == crypt_data[crypto][buyed_coin] || crypt_data[crypto][stack_sell_coin] == crypt_data[crypto][selled_coin]) return 1;
-	new f, Float:f2, f3;
-	f = crypt_data[crypto][coin_price];
-	f2 = (crypt_data[crypto][buyed_coin] / crypt_data[crypto][selled_coin]);
-	crypt_data[crypto][stack_sell_coin] = crypt_data[crypto][selled_coin], crypt_data[crypto][stack_buy_coin] = crypt_data[crypto][buyed_coin], crypt_data[crypto][stack_coin_price] = crypt_data[crypto][coin_price];
- 	f3 = GetPercent(f, floatround(f2, floatround_round));
-	if(crypt_data[crypto][buyed_coin] < crypt_data[crypto][selled_coin]) f3 *= -1;
-	crypt_data[crypto][stack_coin_price] = crypt_data[crypto][coin_price];
-	crypt_data[crypto][coin_price] += f3;
-	deliver_orders(-1, crypto);
-	return 1;
-}
 
-stock set_crypto_price_order(crypto)
+forward set_crypto_price_demand(crypto);
+public set_crypto_price_demand(crypto) // Price Method 1
 {
-	new sell_price, buy_price;
-	new Float:sell_amount, Float:buy_amount;
-	new price, price_sell, price_buy;
-	for(new j; j < MAX_ORDERS; j++)
+	for(new i; i < MAX_ORDERS-1; i++)
 	{
-		if(order_data[j][order_coin] == crypto && order_data[j][order_price] > (crypt_data[crypto][coin_price] - GetPercent(crypt_data[crypto][coin_price], 8)) && order_data[j][order_price] < (GetPercent(crypt_data[crypto][coin_price], 8) + crypt_data[crypto][coin_price]))
-		{
-		    if(order_data[j][order_type] == order_typ_sell)
-   		 	{
-    			sell_price += order_data[j][order_price];
-				sell_amount += order_data[j][order_amount];
-				price_sell++;
-			}
-			else
+	    for(new j = i+1; j < MAX_ORDERS; j++)
+	    {
+			if(order_data[i][order_amount] == order_data[j][order_amount])
 			{
-		 		buy_price += order_data[j][order_price];
-				buy_amount += order_data[j][order_amount];
-				price_buy++;
+				crypt_data[crypto][coin_price] = deliver_orders(i, crypto);
+				deliver_orders(j, crypto);
 			}
-		}
+	    }
 	}
-	if(buy_amount > sell_amount) price = (buy_price / price_buy);
-	if(buy_amount < sell_amount) price = (sell_price / price_sell);
-	else return 1;
-	crypt_data[crypto][stack_coin_price] = crypt_data[crypto][coin_price];
-	crypt_data[crypto][coin_price] = price;
-	deliver_orders(-1, crypto);
-	return 1;
 }
 
-stock set_crypto_price_original(crypto)
+stock set_crypto_price_original(crypto) // Price Method 2
 {
 	new url[32];
 	new RequestsClient:coin_request;
@@ -352,6 +321,7 @@ stock deliver_orders(orderID, crypto)
 			 	{
      				wallet_data[order_data[i][order_connect_wallet]][wallet_money] += order_data[i][order_total];
 				}
+				if(price_method == 1) crypt_data[crypto][coin_price] = order_data[i][order_price];
 		    }
 		}
 	}
@@ -366,6 +336,7 @@ stock deliver_orders(orderID, crypto)
 		{
   			wallet_data[order_data[orderID][order_connect_wallet]][wallet_coin][order_data[orderID][order_coin]] += order_data[orderID][order_amount];
 		}
+		return order_data[orderID][order_price];
 	}
 	return 1;
 }
@@ -567,8 +538,18 @@ public OnFilterScriptInit()
 		}
 		else crypt_data[i][coin_price] = -1;
 	}
+	SetTimerEx("sv_timer", 5000, true, "");
 	SetGameModeText("NoNameV1");
 	AddPlayerClass(0, 1958.3783, 1343.1572, 15.3746, 269.1425, 0, 0, 0, 0, 0, 0);
+	return 1;
+}
+forward sv_timer();
+public sv_timer()
+{
+	for(new i; i < max_wallet_coin_size;i++)
+	{
+	    deliver_orders(-1, i);
+	}
 	return 1;
 }
 public OnFilterScriptExit()
@@ -789,9 +770,8 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			    if(wallet_data[pData[playerid][connected_wallet]][wallet_money] >= floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round))
 			    {
 			        printf("%d degeri", GetPVarInt(playerid, "selected_coin"));
-      				wallet_data[pData[playerid][connected_wallet]][wallet_coin][GetPVarInt(playerid, "selected_coin")] += coin_amount;
-					wallet_data[pData[playerid][connected_wallet]][wallet_money] -= floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round);
 					ServerMessage(playerid, "Order succesful.");
+					create_order(pData[playerid][connected_wallet], GetPVarInt(playerid, "selected_coin"), GetPVarInt(playerid, "select_order_type"), coin_amount, floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round));
 					crypt_data[GetPVarInt(playerid, "selected_coin")][buyed_coin] += coin_amount;
 					crypt_data[GetPVarInt(playerid, "selected_coin")][coin_volume] += floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round);
 			    }
@@ -821,8 +801,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 			    new Float:coin_amount = floatstr(inputtext);
 			    if(wallet_data[pData[playerid][connected_wallet]][wallet_coin][GetPVarInt(playerid, "selected_coin")] >= coin_amount)
 			    {
-      				wallet_data[pData[playerid][connected_wallet]][wallet_coin][GetPVarInt(playerid, "selected_coin")] -= coin_amount;
-					wallet_data[pData[playerid][connected_wallet]][wallet_money] += floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round);
+					create_order(pData[playerid][connected_wallet], GetPVarInt(playerid, "selected_coin"), GetPVarInt(playerid, "select_order_type"), coin_amount, floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round));
 					ServerMessage(playerid, "Order succesful.");
 					crypt_data[GetPVarInt(playerid, "selected_coin")][selled_coin] += coin_amount;
 					crypt_data[GetPVarInt(playerid, "selected_coin")][coin_volume] += floatround((coin_amount * float(crypt_data[GetPVarInt(playerid, "selected_coin")][coin_price])), floatround_round);
